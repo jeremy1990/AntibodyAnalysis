@@ -123,6 +123,9 @@ def convertToPeptideView(psms, conditionKeys):
                 peptideResult["selectedTitle"] = psm["spectrumTitle"]
                 peptideResult["selectedPrecursorMass"] = psm["precursorMass"]
                 peptideResult["selectedPrecursorError"] = psm["precursorError"]
+                for key in conditionKeys:
+                    if key in psm:
+                        peptideResult[key] = psm[key]
     return [peptide[1] for peptide in peptides.items()]
 
 def testSortpNovoPSMs():
