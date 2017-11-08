@@ -21,14 +21,17 @@ Params:
            "spectracount" sorts all peptides based on the number of spectra
            in descending order. If the number of spectra is the same then
            use the length of the peptides. If the length of peptides is still
-           the same, use the score of the highest PSM. If the score of the
-           highest PSM is still the same, use the alphabetic order of the
-           sequence.
-           "scorecount" sorts all peptides based on the score of the highest
-           PSM in descending order. If the score is the same, use the number
-           of spectra. If the number of spectra is the same, use the length of
-           the peptide. If the length of peptide is still the same, use the
-           alphabetic order of the sequence.
+           the same, use the score from high to low. If the score of is still
+           the same, use the alphabetic order of the sequence.
+           "scorecount" sorts all peptides based on the computed score using
+           the given score rule in descending order. If the score is the same,
+           use the number of spectra. If the number of spectra is the same,
+           use the length of the peptide. If the length of peptide is still
+           the same, use the alphabetic order of the sequence.
+    scoreRule sets about how to compute the score of an identified peptide
+              sequence. Two rules are supported in this version, "max" and
+              "sum". "max" is to select the PSM with the highest score.
+              "sum" is to get the summation of all scores.
     conditionKeys the expriment condition that could be important to
                   separate results from multiple groups, such as enzyme.
                   The value should be a list and all key-value pairs will
@@ -42,6 +45,7 @@ Return:
         "peptideRank": 1,
         "spectraCount": 1,
         "highestScore": 5.518731,
+        "sumScore": 5.518731,
         "selectedId": "S16-P1",
         "selectedTitle": "H1.87.87.2.dta",
         "selectedPrecursorMass": 759.400500,
@@ -49,14 +53,17 @@ Return:
         "enzyme": "Lys-C"
     }
 '''
-def sortpNovoPSMs(psms, method="spectracount", conditionKeys=[]):
+def sortpNovoPSMs(psms, method="spectracount", scoreRule="max", \
+                  conditionKeys=[]):
     peptides = convertToPeptideView(psms, conditionKeys)
     if method.lower() == "spectracount":
         peptides = multikeysort(peptides, ["-spectraCount", \
-                          "-peptideLength", "-highestScore", \
+                          "-peptideLength", \
+                          "-highestScore" if scoreRule=="max" else "-sumScore",\
                           "peptideSequence"])
     elif method.lower() == "scorecount":
-        peptides = multikeysort(peptides, ["-highestScore", \
+        peptides = multikeysort(peptides, [
+                          "-highestScore" if scoreRule=="max" else "-sumScore",\
                           "-spectraCount", "-peptideLength", \
                           "peptideSequence"])
     else:
@@ -103,6 +110,7 @@ def convertToPeptideView(psms, conditionKeys):
                 "peptideRank": 1,
                 "spectraCount": 1,
                 "highestScore": psm["score"],
+                "sumScore": psm["score"],
                 "selectedId": psm["id"],
                 "selectedTitle": psm["spectrumTitle"],
                 "selectedPrecursorMass": psm["precursorMass"],
@@ -114,6 +122,7 @@ def convertToPeptideView(psms, conditionKeys):
         else:
             peptideResult = peptides[psm["peptideSequence"]]
             peptideResult["spectraCount"] = peptideResult["spectraCount"] + 1
+            peptideResult["sumScore"] = peptideResult["sumScore"] + psm["score"]
             if psm["score"] > peptideResult["highestScore"] or \
                psm["score"] == peptideResult["highestScore"] and \
                psm["score"] < peptideResult["peptideRank"]:
