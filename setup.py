@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 import os
-from setuptools import setup
+from setuptools import setup, find_packages
 
 def read(fname):
     return open(os.path.join(os.path.dirname(__file__), fname)).read()
@@ -14,11 +14,18 @@ setup(
     license = "Apache License",
     keywords = "antibody analysis",
     url = "https://github.com/jeremy1990/AntibodyAnalysis",
-    packages = ['antiana', 'docs'],
+    packages = find_packages(exclude=['tests']),
+    install_requires = [],
+    extras_require = {
+        'dev': ['check-manifest'],
+        'test': ['coverage']
+    },
     long_description = read('README.rst'),
     classifiers = [
         "Development Status :: 1 - Planning",
         "Topic :: Scientific/Engineering :: Bio-Informatics",
-        "License :: OSI Approved :: Apache Software License"
+        "License :: OSI Approved :: Apache Software License",
+        "Programming Language :: Python :: 2",
+        "Programming Language :: Python :: 2.7"
     ]
 )
