@@ -1,19 +1,22 @@
 '''
-sortpNovoPSMs sorts given psms which is a list of PSMs dictionary objects
+sortpNovoPSMs sorts given psms which is a list of PSMs in peptide view
 according to given method. This method is used for picking better matching
 peptides out of pNovo search results.
 
 Params:
-    psms an array of PSMs. An example of a PSM is like This
-         psm = {
-             "id": "S16-P1",
-             "spectrumTitle": "H1.87.87.2.dta",
+    psmsInPepView a list of PSMs in peptide view. An example of a PSM
+         psmInPepView = {
              "peptideSequence": "TKPEWV",
              "peptideLength": 6,
              "peptideRank": 1,
-             "score": 5.518731,
-             "precursorMass": 759.400500,
-             "precursorError": 5.518731
+             "spectraCount": 1,
+             "highestScore": 5.518731,
+             "sumScore": 5.518731,
+             "selectedId": "S16-P1",
+             "selectedTitle": "H1.87.87.2.dta",
+             "selectedPrecursorMass": 759.400500,
+             "selectedPrecursorError": 5.518731,
+             "enzyme": "Lys-C"
          }
     method the way to sort the array and produce the sorted result.
            Possible values are "spectracount", "scorecount". Default is
@@ -37,32 +40,18 @@ Params:
                   The value should be a list and all key-value pairs will
                   be attached to each PSM. The list is [] by default.
 Return:
-    A sorted array based on the given method. Each item in the array is
-    as follows
-    {
-        "peptideSequence": "TKPEWV",
-        "peptideLength": 6,
-        "peptideRank": 1,
-        "spectraCount": 1,
-        "highestScore": 5.518731,
-        "sumScore": 5.518731,
-        "selectedId": "S16-P1",
-        "selectedTitle": "H1.87.87.2.dta",
-        "selectedPrecursorMass": 759.400500,
-        "selectedPrecursorError": 5.518731,
-        "enzyme": "Lys-C"
-    }
+    A sorted array based on the given method. Each item in the array is a
+    PSM in peptide view.
 '''
-def sortpNovoPSMs(psms, method="spectracount", scoreRule="max", \
+def sortpNovoPSMs(psmsInPepView, method="spectracount", scoreRule="max", \
                   conditionKeys=[]):
-    peptides = convertToPeptideView(psms, conditionKeys)
     if method.lower() == "spectracount":
-        peptides = multikeysort(peptides, ["-spectraCount", \
+        psmsInPepView = multikeysort(psmsInPepView, ["-spectraCount", \
                           "-peptideLength", \
                           "-highestScore" if scoreRule=="max" else "-sumScore",\
                           "peptideSequence"])
     elif method.lower() == "scorecount":
-        peptides = multikeysort(peptides, [
+        psmsInPepView = multikeysort(psmsInPepView, [
                           "-highestScore" if scoreRule=="max" else "-sumScore",\
                           "-spectraCount", "-peptideLength", \
                           "peptideSequence"])
@@ -70,7 +59,7 @@ def sortpNovoPSMs(psms, method="spectracount", scoreRule="max", \
         errorMsg = ["Unrecognized method type: %s", \
                     " only support spectracount and scorecount."]
         raise Exception( ",".join(errorMsg) % method)
-    return peptides
+    return psmsInPepView
 
 '''
 This method is to sort a list of dictionary by setting multiple keys.
@@ -98,7 +87,42 @@ def multikeysort(items, columns):
             return 0
     return sorted(items, cmp=comparer)
 
-def convertToPeptideView(psms, conditionKeys):
+'''
+convertToPeptideView coverts results from PSM view to peptide view.
+
+Params:
+    psms an array of PSMs. An example of a PSM is like This
+         psm = {
+             "id": "S16-P1",
+             "spectrumTitle": "H1.87.87.2.dta",
+             "peptideSequence": "TKPEWV",
+             "peptideLength": 6,
+             "peptideRank": 1,
+             "score": 5.518731,
+             "precursorMass": 759.400500,
+             "precursorError": 5.518731
+         }
+    conditionKeys the expriment condition that could be important to
+                  separate results from multiple groups, such as enzyme.
+                  The value should be a list and all key-value pairs will
+                  be attached to each record. The list is [] by default.
+Return:
+    A sorted array based on the given method. Each item in the array is
+    as follows
+    {
+        "peptideSequence": "TKPEWV",
+        "peptideLength": 6,
+        "peptideRank": 1,
+        "spectraCount": 1,
+        "highestScore": 5.518731,
+        "sumScore": 5.518731,
+        "selectedId": "S16-P1",
+        "selectedTitle": "H1.87.87.2.dta",
+        "selectedPrecursorMass": 759.400500,
+        "selectedPrecursorError": 5.518731
+    }
+'''
+def convertToPeptideView(psms, conditionKeys=[]):
     peptides = {}
     for psm in psms:
         if psm["peptideLength"] == 0:
@@ -128,22 +152,11 @@ def convertToPeptideView(psms, conditionKeys):
                psm["score"] < peptideResult["peptideRank"]:
                 peptideResult["peptideRank"] = psm["peptideRank"]
                 peptideResult["highestScore"] = psm["score"]
-                peptideResult["selectedId"] = psm["id"],
+                peptideResult["selectedId"] = psm["id"]
                 peptideResult["selectedTitle"] = psm["spectrumTitle"]
                 peptideResult["selectedPrecursorMass"] = psm["precursorMass"]
                 peptideResult["selectedPrecursorError"] = psm["precursorError"]
                 for key in conditionKeys:
                     if key in psm:
                         peptideResult[key] = psm[key]
-    return [peptide[1] for peptide in peptides.items()]
-
-def testSortpNovoPSMs():
-    from resultLoader import loadpNovoPSMs
-    filePath = 'D:\\Data\\ProteomeDataAnalysis\\Antibody_H\\AnalysisResults\\' \
-               + 'H1\\pNovoSearch\\result\\pNovo.res'
-    exprimentCondition = {
-        "enzyme": "Lys-C"
-    }
-    psms = loadpNovoPSMs(filePath, exprimentCondition)
-    peptides = sortpNovoPSMs(psms)
-    print peptides
+    return peptides.values()

@@ -14,12 +14,13 @@ setup(
     license = "Apache License",
     keywords = "antibody analysis",
     url = "https://github.com/jeremy1990/AntibodyAnalysis",
-    packages = find_packages(exclude=['tests']),
+    packages = find_packages(exclude=["tests"]),
     install_requires = [],
     extras_require = {
-        'dev': ['check-manifest'],
-        'test': ['coverage']
+        "dev": ["check-manifest"],
+        "test": ["coverage", "mock"]
     },
+    test_suite = 'tests.testSuite',
     long_description = read('README.rst'),
     classifiers = [
         "Development Status :: 1 - Planning",

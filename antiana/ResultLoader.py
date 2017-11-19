@@ -102,12 +102,3 @@ def loadpNovoPSMs(filePath, exprimentCondition={}):
         else:
             raise 'Error line: %s' % line
     return psms
-
-def testLoadpNovoPSMs():
-    filePath = 'D:\\Data\\ProteomeDataAnalysis\\Antibody_H\\AnalysisResults\\' \
-               + 'H1\\pNovoSearch\\result\\pNovo.res'
-    exprimentCondition = {
-        "enzyme": "Lys-C"
-    }
-    psms = loadpNovoPSMs(filePath, exprimentCondition)
-    print len(psms)
