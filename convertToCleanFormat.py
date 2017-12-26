@@ -37,7 +37,6 @@ def isPrefixAA(word):
 def isSuffixAA(word):
   return word[-3:len(word)] in aaMap
 
-
 def turnOffFlag():
   global proteinFlag
   if proteinFlag is True:
@@ -51,34 +50,41 @@ def turnOnFlag():
     proteinFlag = True
     proteinCount = proteinCount + 1
     if proteinCount is not 1:
-      print('\n\n>', end='')
+      print('\n>', end='')
     else:
       print('>', end='')
 
-fh = open('input.txt')
-try:
-  lines = fh.readlines()
-finally:
-  fh.close()
+def removeDigits(word):
+  return ''.join([c for c in word if not c.isdigit()])
+
+def main():
+  fh = open('input.txt')
+  try:
+    lines = fh.readlines()
+  finally:
+    fh.close()
+  for line in lines:
+    line = line.rstrip('\n')
+    words = line.split()
+    for word in words:
+      if isInAAMap(word):
+        turnOffFlag()
+        print(aaMap[word], end='')
+      elif isPureNum(word):
+        turnOffFlag()
+      elif isPrefixAA(word):
+        turnOffFlag()
+        print(aaMap[word[0:3]], end='')
+      elif isSuffixAA(word):
+        turnOffFlag()
+        print(aaMap[word[-3:len(word)]], end='')
+      else:
+        turnOnFlag()
+        print(removeDigits(word), end=' ')
+
+  #print('\nTotally %d protein(s).' % proteinCount, end='')
+
 proteinCount = 0
 proteinFlag = False
-for line in lines:
-  line = line.rstrip('\n')
-  words = line.split()
-  for word in words:
-    if isInAAMap(word):
-      turnOffFlag()
-      print(aaMap[word], end='')
-    elif isPureNum(word):
-      turnOffFlag()
-    elif isPrefixAA(word):
-      turnOffFlag()
-      print(aaMap[word[0:3]], end='')
-    elif isSuffixAA(word):
-      turnOffFlag()
-      print(aaMap[word[-3:len(word)]], end='')
-    else:
-      turnOnFlag()
-      print(word, end=' ')
-
-#print('\nTotally %d protein(s).' % proteinCount, end='')
+if __name__ == '__main__':
+    main()
