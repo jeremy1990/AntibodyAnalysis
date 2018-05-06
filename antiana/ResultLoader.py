@@ -102,3 +102,140 @@ def loadpNovoPSMs(filePath, exprimentCondition={}):
         else:
             raise 'Error line: %s' % line
     return psms
+
+'''
+http://effbot.org/zone/default-values.htm
+'''
+class IdentifiedProtein:
+    def __init__(self, ac="", proteins=None, score=0.0, qvalue=0.0, coverage=0.0,
+                       peptides=None, samesets=None, subsets=None,
+                       haveDistintPep=False):
+        self.ac = ac
+        if proteins is None:
+            self.proteins = {}
+        else:
+            self.proteins = proteins
+        self.score = score
+        self.qvalue = qvalue
+        self.coverage = coverage
+        if peptides is None:
+            self.peptides = []
+        else:
+            self.peptides = peptides
+        if samesets is None:
+            self.samesets = {}
+        else:
+            self.samesets = samesets
+        if subsets is None:
+            self.subsets = {}
+        else:
+            self.subsets = subsets
+        self.haveDistintPep = haveDistintPep
+
+    def getPeptides(self, numOfMods=0):
+        return {}
+
+    def getSequence(self):
+        return self.proteins[self.ac]["seq"]
+
+'''
+Sameset or Subset of an IdentifiedProtein.
+'''
+class SimilarProtein:
+    def __init__(self, type="SameSet", ac="", coverage=0.0, peptides=None):
+        self.type = type
+        self.ac = ac
+        self.coverage = coverage
+        if peptides is None:
+            self.peptides = {}
+        else:
+            self.peptides = peptides
+
+class IdentifiedPeptide:
+    def __init__(self, seq="", pos=-1, mods=None, finalScore=0.0, specNum=0):
+        self.seq = seq
+        if mods is None:
+            self.mods = {}
+        else:
+            self.mods = mods
+        self.pos = pos
+        self.finalScore = finalScore
+        self.specNum = specNum
+
+def loadIdentifiedProteins(proteinFilename, databaseFilename):
+    proteins = loadDatabase(databaseFilename)
+    import operator
+
+    identifiedProteins = {}
+
+    fh = open(proteinFilename)
+    try:
+        lines = fh.readlines()
+    finally:
+        fh.close()
+
+    numOfIdentified = 1
+    identifiedProtein = None
+    for line in lines:
+        line = line.rstrip('\n')
+        items = line.split('\t')
+        if len(items) == 10 and items[0] == 'ID':
+            continue
+        elif len(items) == 19 and items[2] == 'ID':
+            continue
+        elif items[0] == str(numOfIdentified):
+            numOfIdentified = numOfIdentified + 1
+            identifiedProtein = IdentifiedProtein(ac = items[1], \
+                proteins = proteins, score = float(items[2]), \
+                qvalue = float(items[3]), coverage = float(items[4]))
+            numOfPeps = int(items[5])
+            numOfSameset = int(items[6])
+            numOfSubset = int(items[7])
+            identifiedProteins[items[1]] = identifiedProtein
+        elif len(items) > 1 and items[1] == "SameSet":
+            similarProtein = SimilarProtein(ac = items[2],
+                coverage = float(items[3]))
+            identifiedProtein.samesets[items[2]] = similarProtein
+            if len(identifiedProtein.samesets) > numOfSameset:
+                raise Exception('Error number of SameSet.')
+        elif len(items) > 1 and items[1] == "SubSet":
+            similarProtein = SimilarProtein(type = "SubSet", ac = items[2],
+                coverage = float(items[3]))
+            identifiedProtein.subsets[items[2]] = similarProtein
+            if len(identifiedProtein.subsets) > numOfSubset:
+                raise Exception('Error number of SubSet: '
+                    + identifiedProtein.ac + ", "
+                    + str(len(identifiedProtein.subsets)))
+        elif len(items) > 2 and items[2] == str(len(identifiedProtein.peptides)+1):
+            pos = proteins[identifiedProtein.ac]["seq"].find(items[3])
+            identifiedPeptide = IdentifiedPeptide(seq = items[3], \
+                specNum = int(items[26]), pos = pos)
+            identifiedProtein.peptides.append(identifiedPeptide)
+            if len(identifiedProtein.peptides) == numOfPeps:
+                identifiedProtein.peptides = sorted(identifiedProtein.peptides, \
+                    key=operator.attrgetter('pos'))
+    return identifiedProteins
+
+def loadDatabase(databaseFilename):
+    proteins = {}
+    ac = seq = de = None
+
+    fh = open(databaseFilename)
+    try:
+        lines = fh.readlines()
+    finally:
+        fh.close()
+    for line in lines:
+        line = line.strip()
+        if line[0] == '>':
+            if ac is not None:
+                proteins[ac] = { "seq": seq, "description": de }
+            pos = line.find("\t")
+            ac = line[1:pos]
+            de = line[pos+1:-1]
+            seq = ""
+        else:
+            seq = seq + line
+    proteins[ac] = { "seq": seq, "description": de }
+
+    return proteins
