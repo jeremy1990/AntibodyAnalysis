@@ -81,7 +81,7 @@ def loadpNovoPSMs(filePath, exprimentCondition={}):
             pepRank = pepRank + 1
 
             parts = line.split('\t')
-            if len(parts) != 7:
+            if len(parts) < 7:
                 raise 'Error length: %s.' % line
             if 'P' + str(pepRank) != parts[0]:
                 raise Exception('Error pepRank: expected P%d, actual is %s' \
