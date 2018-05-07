@@ -106,6 +106,7 @@ def loadpNovoPSMs(filePath, exprimentCondition={}):
 '''
 http://effbot.org/zone/default-values.htm
 '''
+import math
 class IdentifiedProtein:
     def __init__(self, ac="", proteins=None, score=0.0, qvalue=0.0, coverage=0.0,
                        peptides=None, samesets=None, subsets=None,
@@ -133,10 +134,44 @@ class IdentifiedProtein:
         self.haveDistintPep = haveDistintPep
 
     def getPeptides(self, numOfMods=0):
-        return {}
+        return [(peptide.pos, peptide.seq) for peptide in self.peptides]
 
     def getSequence(self):
         return self.proteins[self.ac]["seq"]
+
+    def getMatches(self, hasHeader=True, limits=80):
+        ret = ""
+        
+        for row in self.__range(limits):
+            indexTuple = self.__index(limits, row)
+            ret = ret + self.__header(limits, indexTuple) + "\n"
+            ret = ret + self.getSequence()[indexTuple[0]-1:indexTuple[1]] + "\n\n"
+        '''
+        for peptide in self.peptides:
+            ret = ret + " " * peptide.pos + peptide.seq + "\n"
+        '''
+        return ret
+
+    def __range(self, limits):
+        return range(0, int(math.ceil(len(self.getSequence()) * 1.0 / limits)))
+
+    def __index(self, limits, index):
+        size = len(self.__range(limits))
+        remainder = len(self.getSequence()) % limits
+        if index == size - 1 and remainder != 0:
+            return (index * limits + 1, index * limits + remainder)
+        else:
+            return (index * limits + 1, (index+1) * limits)
+
+    def __header(self, limits, indexTuple, hasSubIndex=True):
+        rangeIndex = str(indexTuple[0]) + " ~ " + str(indexTuple[1])
+        subIndex = ""
+        for i in range(indexTuple[0]-1, indexTuple[1]):
+            subIndex = subIndex + str(i % 10)
+        if hasSubIndex:
+            return rangeIndex + "\n" + subIndex
+        else:
+            return rangeIndex
 
 '''
 Sameset or Subset of an IdentifiedProtein.
@@ -207,7 +242,9 @@ def loadIdentifiedProteins(proteinFilename, databaseFilename):
                     + identifiedProtein.ac + ", "
                     + str(len(identifiedProtein.subsets)))
         elif len(items) > 2 and items[2] == str(len(identifiedProtein.peptides)+1):
-            pos = proteins[identifiedProtein.ac]["seq"].find(items[3])
+            seqIL = proteins[identifiedProtein.ac]["seq"].replace('I', 'L')
+            pepIL = items[3].replace('I', 'L')
+            pos = seqIL.find(pepIL)
             identifiedPeptide = IdentifiedPeptide(seq = items[3], \
                 specNum = int(items[26]), pos = pos)
             identifiedProtein.peptides.append(identifiedPeptide)

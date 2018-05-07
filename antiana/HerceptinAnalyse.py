@@ -81,5 +81,6 @@ if __name__ == "__main__":
                  + "2018-05-06\\20171103_06\\result\\pFind.protein",
                  "D:\\Data\\ProteomeDataAnalysis\\Databases\\" \
                  + "uniprotsprot_IMGT_ALL_IL-with_answer.fasta_td.fasta")
-    print proteins['Last-time'].getSequence()
-    print [(peptide.pos, peptide.seq) for peptide in proteins['Last-time'].peptides]
+    #print proteins['Last-time'].getSequence()
+    #print proteins['Last-time'].getPeptides()
+    print proteins['Last-time'].getMatches()
